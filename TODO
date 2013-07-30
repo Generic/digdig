@@ -1,0 +1,11 @@
+1. Abstract entities based on Hero from sample, 
+	- Decide how to deal out entities that there are multiple of, (i.e monsters)
+2. Create containers for entities and have an update, initialize and render for the containers
+	- Decide how containers exist (i.e do "chunks" own containers? If so then the hero needs to be kept track of)
+3. Unify resource loading into one file, maybe lazy load and deal with lag (loading screen are bad)
+4. Figure out how to modify maps at runtime
+	- Look at other procedural generated games' map storage formats
+	- Could make a class that extends whatever map renderer uses as a tile in order to store additional information, maybe extend map renderer as well.
+	- Get proper tile set
+	- Decide how maps will be loaded/generated/stored officially
+5. Find a way to get tile that mouse is on

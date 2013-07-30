@@ -15,7 +15,6 @@ public class MapResources {
 	private TiledMap map;
 	
 	public void create() {
-		//map.
 	}
 	
 	public void dispose() {

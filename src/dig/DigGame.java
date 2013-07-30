@@ -69,7 +69,6 @@ public class DigGame
     private TiledMap map;
 	private OrthogonalTiledMapRenderer renderer;
 	private OrthographicCamera camera;
-	private Texture koalaTexture;
 	private Animation stand;
 	private Animation walk;
 	private Animation jump;
@@ -84,7 +83,7 @@ public class DigGame
 	};
 	private Array<Rectangle> tiles = new Array<Rectangle>();
  
-	private static final float GRAVITY = -2.0f;
+	private static final float GRAVITY = -0.5f;
  
 
 	TextureAtlas atlas;
