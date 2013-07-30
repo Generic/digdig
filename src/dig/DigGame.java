@@ -95,14 +95,13 @@ public class DigGame
         Gdx.app.log( DigGame.LOG, "Creating game" );
         fpsLogger = new FPSLogger();
         
-		koalaTexture = new Texture("data/koalio.png");
-		TextureRegion[] regions = TextureRegion.split(koalaTexture, 18, 26)[0];
 		
 		atlas = new TextureAtlas(new FileHandle(new File("data/heroTextures.txt")));
 		for (AtlasRegion t : atlas.getRegions()) {
 			Gdx.app.log(DigGame.LOG, "Atlas region with name: " + t.name + " loaded.");
 		}
-		stand = new Animation(0, atlas.findRegion("p1_stand"));
+		TextureRegion standText = atlas.findRegion("p1_stand");
+		stand = new Animation(0, standText);
 		jump = new Animation(0, atlas.findRegion("p1_jump"));
 		Array<TextureRegion> walking = new Array<TextureRegion>(11);
 		
@@ -121,8 +120,8 @@ public class DigGame
 		// figure out the width and height of the koala for collision
 		// detection and rendering by converting a koala frames pixel
 		// size into world units (1 unit == 16 pixels)
-		Hero.WIDTH = 1 / 16f * regions[0].getRegionWidth();
-		Hero.HEIGHT = 1 / 16f * regions[0].getRegionHeight();
+		Hero.WIDTH = 1 / 16f * standText.getRegionWidth();
+		Hero.HEIGHT = 1 / 16f * standText.getRegionHeight();
  
 		// load the map, set the unit scale to 1/16 (1 unit == 16 pixels)
 		map = new TmxMapLoader().load("data/level1.tmx");
