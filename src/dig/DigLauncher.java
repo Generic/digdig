@@ -18,6 +18,6 @@ public class DigLauncher {
             boolean useOpenGLES2 = false;
      
             // create the game
-            new LwjglApplication( listener, title, width, height, useOpenGLES2 );
+            new LwjglApplication(listener, title, width, height, useOpenGLES2 );
         }
 }

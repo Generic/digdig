@@ -82,8 +82,12 @@ public class DigGame
 		}
 	};
 	private Array<Rectangle> tiles = new Array<Rectangle>();
+	
+	private float scale = 1 / 16f;
  
-	private static final float GRAVITY = -0.5f;
+	// arbitrary value, negative is down, positive is up
+	// -1 feels like a "natural" amount
+	private static final float GRAVITY = -1f;
  
 
 	TextureAtlas atlas;
@@ -94,17 +98,20 @@ public class DigGame
         Gdx.app.log( DigGame.LOG, "Creating game" );
         fpsLogger = new FPSLogger();
         
-		
+		// load all the different textures into memory
 		atlas = new TextureAtlas(new FileHandle(new File("data/heroTextures.txt")));
 		for (AtlasRegion t : atlas.getRegions()) {
 			Gdx.app.log(DigGame.LOG, "Atlas region with name: " + t.name + " loaded.");
 		}
+		
 		TextureRegion standText = atlas.findRegion("p1_stand");
 		stand = new Animation(0, standText);
 		jump = new Animation(0, atlas.findRegion("p1_jump"));
 		Array<TextureRegion> walking = new Array<TextureRegion>(11);
 		
 		for (int i = 1; i <= 11; i++) {
+			// i < 10 ? "0" + i : i
+			// puts a 0 in front of the number if it is less than 10 to get 01, 02, 03... 09, 10, 11
 			String regionName = "p1_walk" + (i < 10 ? "0" + i : i);
 			TextureRegion tempRegion = atlas.findRegion(regionName);
 			if (tempRegion == null) {
@@ -114,17 +121,18 @@ public class DigGame
 		}
 		
 		walk = new Animation(0.10f, walking);
-		walk.setPlayMode(Animation.LOOP_PINGPONG);
+		walk.setPlayMode(Animation.LOOP);
  
 		// figure out the width and height of the koala for collision
 		// detection and rendering by converting a koala frames pixel
 		// size into world units (1 unit == 16 pixels)
-		Hero.WIDTH = 1 / 16f * standText.getRegionWidth();
-		Hero.HEIGHT = 1 / 16f * standText.getRegionHeight();
+		Hero.WIDTH = scale * standText.getRegionWidth() / 2;
+		Hero.HEIGHT = scale * standText.getRegionHeight() / 2;
  
 		// load the map, set the unit scale to 1/16 (1 unit == 16 pixels)
+		// 1 unit is 16 pixels so that one unit is one tile
 		map = new TmxMapLoader().load("data/level1.tmx");
-		renderer = new OrthogonalTiledMapRenderer(map, 1 / 16f);
+		renderer = new OrthogonalTiledMapRenderer(map, scale);
  
 		// create an orthographic camera, shows us 30x20 units of the world
 		camera = new OrthographicCamera();
@@ -161,13 +169,14 @@ public class DigGame
 		camera.position.x = hero.position.x;
 		camera.update();
  
-		// set the tile map rendere view based on what the
+		// set the tile map renderer view based on what the
 		// camera sees and render the map
 		renderer.setView(camera);
 		renderer.render();
  
 		// render the koala
 		renderHero(deltaTime);
+		
         // output the current FPS
         fpsLogger.log();
     }
@@ -213,7 +222,7 @@ public class DigGame
 			hero.velocity.x = Math.signum(hero.velocity.x) * Hero.MAX_VELOCITY;
 		}
  
-		// clamp the velocity to 0 if it's < 1, and set the state to standign
+		// clamp the velocity to 0 if it's < 1, and set the state to standing
 		if (Math.abs(hero.velocity.x) < 1)
 		{
 			hero.velocity.x = 0;
