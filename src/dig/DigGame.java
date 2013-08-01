@@ -3,32 +3,25 @@ package dig;
 
 import java.io.File;
 
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.FPSLogger;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.FPSLogger;
 import com.badlogic.gdx.graphics.GL10;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TiledMapTile;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
- 
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
  
@@ -45,7 +38,7 @@ public class DigGame
 		static float WIDTH;
 		static float HEIGHT;
 		static float MAX_VELOCITY = 10f;
-		static float JUMP_VELOCITY = 40f;
+		static float JUMP_VELOCITY = 25f;
 		static float DAMPING = 0.80f;
  
 		enum State
@@ -61,6 +54,19 @@ public class DigGame
 		boolean grounded = false;
 	}
 	
+	public static class Explosion {
+		static float WIDTH;
+		static float HEIGHT;
+		
+		enum State {
+			Exploding
+		}
+		
+		final Vector2 position = new Vector2();
+		State state = State.Exploding;
+		float stateTime = 0;
+	}
+	
     // constant useful for logging
     public static final String LOG = DigGame.class.getSimpleName();
  
@@ -72,7 +78,9 @@ public class DigGame
 	private Animation stand;
 	private Animation walk;
 	private Animation jump;
+	private Animation circles;
 	private Hero hero;
+	private Explosion explosion;
 	private Pool<Rectangle> rectPool = new Pool<Rectangle>()
 	{
 		@Override
@@ -128,6 +136,18 @@ public class DigGame
 		// size into world units (1 unit == 16 pixels)
 		Hero.WIDTH = scale * standText.getRegionWidth() / 2;
 		Hero.HEIGHT = scale * standText.getRegionHeight() / 2;
+		
+		//load circle animation
+		//get textures from file
+		atlas = new TextureAtlas(new FileHandle(new File("data/CircleTextures.txt")));
+		for (AtlasRegion t : atlas.getRegions()) {
+			Gdx.app.log(DigGame.LOG, "Atlas region with name: " + t.name + " loaded.");
+		}
+		//make into animation
+		//LOOP_RANDOM doesn't seem to work as I expected it to...
+		circles = new Animation (0.2f, atlas.getRegions(), Animation.LOOP);
+		
+		
  
 		// load the map, set the unit scale to 1/16 (1 unit == 16 pixels)
 		// 1 unit is 16 pixels so that one unit is one tile
@@ -142,6 +162,10 @@ public class DigGame
 		// create the Koala we want to move around the world
 		hero = new Hero();
 		hero.position.set(20, 20);
+		
+		//create explosion
+		explosion = new Explosion();
+		explosion.position.set(5, 5);
     }
  
     @Override
@@ -177,11 +201,14 @@ public class DigGame
 		// render the koala
 		renderHero(deltaTime);
 		
+		// render explosion
+		renderExplosion(deltaTime);
+		
         // output the current FPS
         fpsLogger.log();
     }
     
-    private Vector2 tmp = new Vector2();
+    //private Vector2 tmp = new Vector2();
 
     private void updateHero(float deltaTime)
 	{
@@ -190,7 +217,7 @@ public class DigGame
 		hero.stateTime += deltaTime;
  
 		// check input and apply to velocity & state
-		if ((Gdx.input.isKeyPressed(Keys.SPACE) || isTouched(0.75f, 1)) && hero.grounded)
+		if ((Gdx.input.isKeyPressed(Keys.SPACE) || Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.Q) || isTouched(0.75f, 1)) && hero.grounded)
 		{
 			hero.velocity.y += Hero.JUMP_VELOCITY;
 			hero.state = Hero.State.Jumping;
@@ -232,7 +259,7 @@ public class DigGame
  
 		// multiply by delta time so we know how far we go
 		// in this frame
-		hero.velocity.mul(deltaTime);
+		hero.velocity.scl(deltaTime);
  
 		// perform collision detection & response, on each axis, separately
 		// if the hero is moving right, check the tiles to the right of it's
@@ -289,6 +316,7 @@ public class DigGame
 					// we hit a block jumping upwards, let's destroy it!
 					TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(1);
 					layer.setCell((int) tile.x, (int) tile.y, null);
+					
 				}
 				else
 				{
@@ -299,13 +327,17 @@ public class DigGame
 				hero.velocity.y = 0;
 				break;
 			}
+			//prevents jumping mid air
+			else {
+				hero.grounded = false;
+			}
 		}
 		rectPool.free(heroRect);
  
 		// unscale the velocity by the inverse delta time and set 
 		// the latest position
 		hero.position.add(hero.velocity);
-		hero.velocity.mul(1 / deltaTime);
+		hero.velocity.scl(1 / deltaTime);
  
 		// Apply damping to the velocity on the x-axis so we don't
 		// walk infinitely once a key was pressed
@@ -381,6 +413,15 @@ public class DigGame
 		{
 			batch.draw(frame, hero.position.x + Hero.WIDTH, hero.position.y, -Hero.WIDTH, Hero.HEIGHT);
 		}
+		batch.end();
+	}
+	
+	private void renderExplosion (float deltaTime) {
+		explosion.stateTime = explosion.stateTime + deltaTime;
+		TextureRegion frame = circles.getKeyFrame(explosion.stateTime);
+		SpriteBatch batch = renderer.getSpriteBatch();
+		batch.begin();
+		batch.draw(frame, explosion.position.x, explosion.position.y, 1, 1);
 		batch.end();
 	}
  
