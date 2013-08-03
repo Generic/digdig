@@ -145,9 +145,7 @@ public class DigGame
 		}
 		//make into animation
 		//LOOP_RANDOM doesn't seem to work as I expected it to...
-		circles = new Animation (0.2f, atlas.getRegions(), Animation.LOOP);
-		
-		
+		circles = new Animation (0.2f, atlas.getRegions(), Animation.LOOP_RANDOM);
  
 		// load the map, set the unit scale to 1/16 (1 unit == 16 pixels)
 		// 1 unit is 16 pixels so that one unit is one tile
