@@ -23,6 +23,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.Pool;
  
 /**
@@ -39,7 +40,8 @@ public class DigGame
 		static float HEIGHT;
 		static float MAX_VELOCITY = 10f;
 		static float JUMP_VELOCITY = 25f;
-		static float DAMPING = 0.80f;
+		static float DAMPING = 0.975f;
+		static float ACCEL = 15f;
  
 		enum State
 		{
@@ -108,9 +110,6 @@ public class DigGame
         
 		// load all the different textures into memory
 		atlas = new TextureAtlas(new FileHandle(new File("data/heroTextures.txt")));
-		for (AtlasRegion t : atlas.getRegions()) {
-			Gdx.app.log(DigGame.LOG, "Atlas region with name: " + t.name + " loaded.");
-		}
 		
 		TextureRegion standText = atlas.findRegion("p1_stand");
 		stand = new Animation(0, standText);
@@ -145,7 +144,7 @@ public class DigGame
 		}
 		//make into animation
 		//LOOP_RANDOM doesn't seem to work as I expected it to...
-		circles = new Animation (0.2f, atlas.getRegions(), Animation.LOOP_RANDOM);
+		circles = new Animation (0.2f, atlas.getRegions(), Animation.LOOP);
  
 		// load the map, set the unit scale to 1/16 (1 unit == 16 pixels)
 		// 1 unit is 16 pixels so that one unit is one tile
@@ -224,7 +223,8 @@ public class DigGame
  
 		if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A) || isTouched(0, 0.25f))
 		{
-			hero.velocity.x = -Hero.MAX_VELOCITY;
+			//hero.velocity.x = -Hero.MAX_VELOCITY;
+			hero.velocity.x -= Hero.ACCEL * deltaTime;
 			if (hero.grounded)
 				hero.state = Hero.State.Walking;
 			hero.facesRight = false;
@@ -232,12 +232,15 @@ public class DigGame
  
 		if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D) || isTouched(0.25f, 0.5f))
 		{
-			hero.velocity.x = Hero.MAX_VELOCITY;
+			//hero.velocity.x = Hero.MAX_VELOCITY;
+			hero.velocity.x += Hero.ACCEL * deltaTime;
 			if (hero.grounded)
 				hero.state = Hero.State.Walking;
 			hero.facesRight = true;
 		}
  
+		Gdx.app.log(DigGame.LOG, "hero.velocity.x = " + hero.velocity.x);
+		
 		// apply gravity if we are falling
 		hero.velocity.add(0, GRAVITY);
  
@@ -248,12 +251,13 @@ public class DigGame
 		}
  
 		// clamp the velocity to 0 if it's < 1, and set the state to standing
-		if (Math.abs(hero.velocity.x) < 1)
+		/*
+		if (Math.abs(hero.velocity.x) < 0.001)
 		{
 			hero.velocity.x = 0;
 			if (hero.grounded)
 				hero.state = Hero.State.Standing;
-		}
+		}*/
  
 		// multiply by delta time so we know how far we go
 		// in this frame
