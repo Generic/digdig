@@ -9,3 +9,11 @@
 	- Get proper tile set
 	- Decide how maps will be loaded/generated/stored officially
 5. Find a way to get tile that mouse is on
+
+
+UPDATE 2
+1. Move dig.DigGame.Hero into entities.Hero
+2. Move entities package into dig package
+3. Put hero initializing into EntityFactory
+	- Make a way for EntityFactory to clone the initialized Entity and pass it when another Entity is needed
+4. THINK OF MAP STUFF
